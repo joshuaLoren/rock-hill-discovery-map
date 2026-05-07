@@ -69,6 +69,22 @@
     --tile-blend: multiply;
     --tile-opa: 0.78;
   }
+
+  body[data-theme="park"] {
+    --ink: #1A3A5A;
+    --frame: #0F4A5A;
+    --parch: #FFF4D8;
+    --parch-dark: #FAE5B0;
+    --accent: #E62D3D;
+    --navy: #0F4A5A;
+    --green: #2FA94F;
+    --cat-coffee: #7B4520;
+    --cat-arts: #7E3FAA;
+    --cat-fam: #3FA9F5;
+    --tile-filter: saturate(2.2) hue-rotate(8deg) brightness(1.18) contrast(1.0);
+    --tile-blend: normal;
+    --tile-opa: 0.95;
+  }
   body[data-theme="sunset"] {
     --ink: #582818;
     --frame: #582818;
@@ -365,6 +381,43 @@
   .print-bar a { background: var(--frame); }
   .print-bar button:hover { background: #C82828; }
 
+
+  body[data-theme="park"] .cartouche h1 {
+    color: var(--accent);
+    text-shadow: 2px 2px 0 var(--navy), 4px 4px 0 var(--parch-dark);
+  }
+  body[data-theme="park"] .cartouche::before,
+  body[data-theme="park"] .cartouche::after {
+    content: '★';
+    color: var(--green);
+    font-size: 28px;
+  }
+  body[data-theme="park"] .rail-head {
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    font-size: 14px;
+  }
+  body[data-theme="park"] .rail-head.eat    { background: #FF6F2C; }
+  body[data-theme="park"] .rail-head.do     { background: #2FA94F; }
+  body[data-theme="park"] .rail-head.coffee { background: #7B4520; }
+  body[data-theme="park"] .rail-head.fam    { background: #3FA9F5; }
+  body[data-theme="park"] .ad h3 { color: var(--accent); }
+  body[data-theme="park"] .biz-marker {
+    width: 40px; height: 40px;
+    border-width: 3px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.4);
+  }
+  body[data-theme="park"] .biz-marker .num {
+    font-size: 19px;
+  }
+  body[data-theme="park"] .free-badge {
+    background: var(--accent);
+    transform: rotate(-15deg);
+  }
+  body[data-theme="park"] .map-area::after {
+    background:
+      radial-gradient(ellipse at center, transparent 60%, rgba(15,74,90,0.10) 100%);
+  }
+
   @page { size: 17in 11in; margin: 0.4in; }
 
   .qr-section {
@@ -408,7 +461,7 @@
 <body data-theme="parchment">
 <script>
   const _theme = new URLSearchParams(location.search).get('theme');
-  if (_theme && ['parchment','navy','forest','coastal','sunset'].includes(_theme)) {
+  if (_theme && ['parchment','navy','forest','coastal','sunset','park'].includes(_theme)) {
     document.body.setAttribute('data-theme', _theme);
   }
 </script>
@@ -554,9 +607,13 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-const CATS = {
+const _qsTheme = new URLSearchParams(location.search).get('theme');
+const CATS = (_qsTheme === 'park') ? {
+  outdoor: '#2FA94F', food: '#FF6F2C', coffee: '#7B4520',
+  beer:    '#E8B33D', arts: '#7E3FAA', family: '#3FA9F5',
+} : {
   outdoor: '#3A6818', food: '#A02018', coffee: '#5A2A08',
-  beer: '#5A3008', arts: '#380A38', family: '#0A2848',
+  beer:    '#5A3008', arts: '#380A38', family: '#0A2848',
 };
 const PLACES = [
   { lat:34.9252, lon:-81.0297, n:1,  cat:'coffee',  name:'MudBug Coffee',    img:'assets/coffee_shop.png' },
