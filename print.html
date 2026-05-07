@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
-  :root {
+  :root, body[data-theme="parchment"] {
     --ink: #3A2208;
     --frame: #5A3818;
     --parch: #F0E2B8;
@@ -17,6 +17,72 @@
     --accent: #A02018;
     --navy: #003579;
     --green: #4A8228;
+    --cat-coffee: #5A2A08;
+    --cat-arts: #380A38;
+    --cat-fam: #380A38;
+    --tile-filter: sepia(0.40) saturate(1.4) hue-rotate(-12deg) contrast(0.92) brightness(1.08);
+    --tile-blend: multiply;
+    --tile-opa: 0.78;
+  }
+  body[data-theme="navy"] {
+    --ink: #1A2A4A;
+    --frame: #1A2A4A;
+    --parch: #FBF5E5;
+    --parch-dark: #E8DCC0;
+    --accent: #B83020;
+    --navy: #1A2A4A;
+    --green: #4A6228;
+    --cat-coffee: #4A2A08;
+    --cat-arts: #4A1A38;
+    --cat-fam: #1A2A4A;
+    --tile-filter: sepia(0.20) saturate(0.85) hue-rotate(-5deg) contrast(0.95);
+    --tile-blend: multiply;
+    --tile-opa: 0.82;
+  }
+  body[data-theme="forest"] {
+    --ink: #2A3A1A;
+    --frame: #2A3A1A;
+    --parch: #ECDCB0;
+    --parch-dark: #C8B888;
+    --accent: #884818;
+    --navy: #2A3A1A;
+    --green: #4A6818;
+    --cat-coffee: #5A3008;
+    --cat-arts: #4A3818;
+    --cat-fam: #2A3A1A;
+    --tile-filter: sepia(0.30) saturate(0.85) hue-rotate(15deg) contrast(0.95);
+    --tile-blend: multiply;
+    --tile-opa: 0.80;
+  }
+  body[data-theme="coastal"] {
+    --ink: #1E3A5A;
+    --frame: #1E3A5A;
+    --parch: #F4ECD4;
+    --parch-dark: #DDD4B8;
+    --accent: #C84838;
+    --navy: #1E3A5A;
+    --green: #5A8A48;
+    --cat-coffee: #4A3818;
+    --cat-arts: #2A487A;
+    --cat-fam: #1E3A5A;
+    --tile-filter: hue-rotate(-15deg) saturate(0.85) brightness(1.05) contrast(0.92);
+    --tile-blend: multiply;
+    --tile-opa: 0.78;
+  }
+  body[data-theme="sunset"] {
+    --ink: #582818;
+    --frame: #582818;
+    --parch: #F4DCAC;
+    --parch-dark: #E8B888;
+    --accent: #C04030;
+    --navy: #6A2818;
+    --green: #806028;
+    --cat-coffee: #5A2008;
+    --cat-arts: #4A1828;
+    --cat-fam: #6A2818;
+    --tile-filter: sepia(0.55) saturate(1.5) hue-rotate(-25deg) contrast(0.92) brightness(1.05);
+    --tile-blend: multiply;
+    --tile-opa: 0.78;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -181,9 +247,9 @@
   .leaflet-control-container, .leaflet-control-zoom { display: none !important; }
   .leaflet-control-attribution { font-size: 8px; opacity: 0.4; }
   .leaflet-tile-pane {
-    filter: sepia(0.40) saturate(1.4) hue-rotate(-12deg) contrast(0.92) brightness(1.08);
-    mix-blend-mode: multiply;
-    opacity: 0.78;
+    filter: var(--tile-filter);
+    mix-blend-mode: var(--tile-blend);
+    opacity: var(--tile-opa);
   }
   .map-area::after {
     content: '';
@@ -208,24 +274,25 @@
   /* ============== MARKERS & LABELS ============== */
   .biz-marker {
     background: var(--parch);
-    border: 2px solid var(--frame);
+    border: 2.5px solid var(--frame);
     border-radius: 50%;
-    width: 32px; height: 32px;
+    width: 36px; height: 36px;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,.35);
+    box-shadow: 0 2px 5px rgba(0,0,0,.4);
   }
   .biz-marker img {
-    width: 26px; height: 26px;
+    width: 30px; height: 30px;
     object-fit: cover; border-radius: 50%;
   }
   .biz-marker .num {
     font-family: 'Cabin Sketch', cursive;
-    font-weight: 700; font-size: 14px;
+    font-weight: 700; font-size: 17px;
     color: #fff;
     background: var(--cat-color, var(--frame));
     width: 100%; height: 100%;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
+    text-shadow: 0 1px 2px rgba(0,0,0,.35);
   }
 
   /* Permanent tooltip = on-map labels */
@@ -338,7 +405,13 @@
   }
 </style>
 </head>
-<body>
+<body data-theme="parchment">
+<script>
+  const _theme = new URLSearchParams(location.search).get('theme');
+  if (_theme && ['parchment','navy','forest','coastal','sunset'].includes(_theme)) {
+    document.body.setAttribute('data-theme', _theme);
+  }
+</script>
 
 <div class="print-bar">
   <a href="index.html">← Gallery</a>
@@ -530,10 +603,7 @@ PLACES.forEach(pl => {
   const icon = L.divIcon({ html, className: '', iconSize: [32, 32], iconAnchor: [16, 16] });
   L.marker([pl.lat, pl.lon], { icon })
     .addTo(map)
-    .bindTooltip(`${pl.n}. ${pl.name}`, {
-      permanent: true, direction: 'right', offset: [18, 0],
-      className: 'biz-tip',
-    });
+    .bindTooltip(`<b>${pl.n}.</b> ${pl.name}`, { className: 'biz-tip' });
 });
 </script>
 </body>
