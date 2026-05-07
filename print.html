@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rock Hill Discovery Map — Print Edition</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Cabin+Sketch:wght@400;700&family=Playfair+Display:wght@700;900&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+  :root {
+    --ink: #3A2208;
+    --frame: #5A3818;
+    --parch: #F0E2B8;
+    --parch-dark: #D6BD8A;
+    --accent: #A02018;
+    --navy: #003579;
+    --green: #4A8228;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #2A1810; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    color: var(--ink);
+    background:
+      repeating-linear-gradient(45deg, transparent 0 8px, rgba(255,255,255,0.02) 8px 9px),
+      #2A1810;
+    min-height: 100vh;
+    padding: 24px;
+    display: flex; justify-content: center;
+  }
+
+  /* ============== SHEET (the printed page) ============== */
+  .sheet {
+    width: 1500px;
+    flex-shrink: 0;
+    background: var(--parch);
+    border: 6px solid var(--frame);
+    box-shadow:
+      inset 0 0 0 8px var(--parch),
+      inset 0 0 0 11px #C8A878,
+      inset 0 0 0 13px var(--frame),
+      0 24px 80px rgba(0,0,0,.6);
+    padding: 14px;
+    position: relative;
+  }
+
+  /* ============== HEADER CARTOUCHE ============== */
+  .cartouche {
+    text-align: center;
+    padding: 16px 0 12px;
+    border-bottom: 1.5px solid #8A6840;
+    margin-bottom: 12px;
+    position: relative;
+    background: radial-gradient(ellipse at center, rgba(200,168,120,0.20), transparent 70%);
+  }
+  .cartouche::before, .cartouche::after {
+    content: '✦';
+    color: var(--accent); font-size: 22px;
+    margin: 0 16px; vertical-align: middle;
+  }
+  .cartouche h1 {
+    display: inline-block;
+    font-family: 'Cabin Sketch', cursive;
+    font-weight: 700;
+    font-size: 46px;
+    color: var(--ink);
+    letter-spacing: 4px;
+    line-height: 1;
+    vertical-align: middle;
+  }
+  .cartouche .sub {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 13px;
+    color: var(--frame);
+    letter-spacing: 5px;
+    margin-top: 6px;
+  }
+  .cartouche .free-badge {
+    position: absolute; top: 12px; left: 12px;
+    background: var(--accent); color: var(--parch);
+    border: 2px solid var(--parch); border-radius: 50%;
+    width: 60px; height: 60px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Cabin Sketch', cursive; font-weight: 700;
+    box-shadow: 0 3px 8px rgba(0,0,0,.4);
+    transform: rotate(-8deg);
+  }
+  .cartouche .free-badge .free { font-size: 16px; line-height: 1; }
+  .cartouche .free-badge .take { font-size: 7px; letter-spacing: 1px; margin-top: 2px; opacity: 0.85; }
+  .cartouche .edition {
+    position: absolute; top: 18px; right: 18px;
+    border: 1.5px solid var(--navy); color: var(--navy);
+    font-family: 'Cabin Sketch', cursive; font-weight: 700;
+    font-size: 10px; letter-spacing: 2px;
+    padding: 3px 10px; border-radius: 14px;
+    background: var(--parch);
+  }
+
+  /* ============== BODY GRID — 3-column trifold style ============== */
+  .body {
+    display: grid;
+    grid-template-columns: 230px 1fr 230px;
+    gap: 10px;
+    align-items: start;
+  }
+
+  /* ============== SIDE RAILS (ads/listings) ============== */
+  .rail {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .rail-head {
+    background: var(--navy); color: var(--parch);
+    font-family: 'Cabin Sketch', cursive; font-weight: 700;
+    font-size: 13px; letter-spacing: 2px;
+    text-align: center; padding: 6px 8px;
+    border-radius: 3px;
+  }
+  .rail-head.eat { background: var(--accent); }
+  .rail-head.do  { background: var(--green); }
+  .rail-head.coffee { background: #5A2A08; }
+  .rail-head.fam { background: #380A38; }
+
+  .ad {
+    background: #FCF4DA;
+    border: 1.5px solid #8A6840;
+    border-radius: 3px;
+    padding: 8px 10px;
+    position: relative;
+  }
+  .ad-num {
+    position: absolute; top: -6px; left: -6px;
+    width: 22px; height: 22px;
+    background: var(--cat-color, var(--frame));
+    color: var(--parch);
+    border: 1.5px solid var(--parch);
+    border-radius: 50%;
+    font-family: 'Cabin Sketch', cursive; font-weight: 700;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .ad h3 {
+    font-family: 'Caveat', cursive; font-weight: 700;
+    font-size: 18px; color: var(--ink);
+    line-height: 1.05;
+    margin-bottom: 2px;
+    margin-left: 18px;
+  }
+  .ad .sub {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 12px; color: #5A3818;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .ad .meta {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 10px; color: #7A5230;
+    line-height: 1.2;
+    border-top: 1px dashed #C8A878;
+    padding-top: 3px;
+  }
+
+  /* ============== MAP AREA ============== */
+  .map-area {
+    border: 3px solid var(--frame);
+    border-radius: 3px;
+    overflow: hidden;
+    background: #DDC890;
+    position: relative;
+    box-shadow: inset 0 0 30px rgba(60,30,8,0.18);
+  }
+  #map {
+    height: 760px;
+    width: 100%;
+    background: #DDC890;
+  }
+  /* Lock down all map interaction styling */
+  .leaflet-control-container, .leaflet-control-zoom { display: none !important; }
+  .leaflet-control-attribution { font-size: 8px; opacity: 0.4; }
+  .leaflet-tile-pane {
+    filter: sepia(0.40) saturate(1.4) hue-rotate(-12deg) contrast(0.92) brightness(1.08);
+    mix-blend-mode: multiply;
+    opacity: 0.78;
+  }
+  .map-area::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 50%, rgba(90,56,24,0.18) 100%),
+      repeating-radial-gradient(circle at 30% 35%, rgba(120,80,40,0.04) 0, rgba(120,80,40,0.04) 1px, transparent 2px, transparent 5px);
+    pointer-events: none;
+    z-index: 401;
+  }
+
+  /* Compass corner */
+  .compass-corner {
+    position: absolute;
+    bottom: 14px; right: 16px;
+    z-index: 500;
+    width: 84px; height: 84px;
+    pointer-events: none;
+    opacity: 0.92;
+  }
+
+  /* ============== MARKERS & LABELS ============== */
+  .biz-marker {
+    background: var(--parch);
+    border: 2px solid var(--frame);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,.35);
+  }
+  .biz-marker img {
+    width: 26px; height: 26px;
+    object-fit: cover; border-radius: 50%;
+  }
+  .biz-marker .num {
+    font-family: 'Cabin Sketch', cursive;
+    font-weight: 700; font-size: 14px;
+    color: #fff;
+    background: var(--cat-color, var(--frame));
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Permanent tooltip = on-map labels */
+  .leaflet-tooltip.biz-tip {
+    background: rgba(252,244,216,0.96);
+    border: 1.5px solid var(--frame);
+    border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    padding: 3px 7px;
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .leaflet-tooltip.biz-tip::before {
+    border-right-color: var(--frame);
+  }
+
+  /* ============== BOTTOM STRIP (sponsor + walk reference) ============== */
+  .bottom-strip {
+    margin-top: 10px;
+    background: linear-gradient(to bottom, var(--parch), var(--parch-dark));
+    border: 2px solid var(--frame);
+    border-radius: 4px;
+    padding: 10px 16px;
+    display: flex; gap: 14px; align-items: center; justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .legend-row {
+    display: flex; gap: 14px; flex-wrap: wrap;
+  }
+  .legend-row .item {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Caveat', cursive; font-weight: 700;
+    font-size: 16px; color: var(--ink);
+  }
+  .legend-row .dot {
+    width: 14px; height: 14px;
+    border-radius: 3px; border: 1.5px solid var(--ink);
+  }
+  .credit {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 12px; color: var(--frame); letter-spacing: 1px;
+  }
+  .walk-key {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 13px; color: var(--frame);
+    border-left: 1px dashed #8A6840;
+    padding-left: 14px;
+  }
+  .walk-key b { font-family: 'Cabin Sketch', cursive; color: var(--accent); }
+
+  /* ============== PRINT MODE — letter landscape ============== */
+  .print-bar {
+    position: fixed; top: 12px; right: 12px;
+    z-index: 9999;
+    display: flex; gap: 8px;
+  }
+  .print-bar button, .print-bar a {
+    font-family: 'Cabin Sketch', cursive; font-weight: 700;
+    font-size: 13px; letter-spacing: 2px;
+    background: var(--accent); color: var(--parch);
+    border: 2px solid var(--parch);
+    padding: 8px 14px; border-radius: 4px;
+    cursor: pointer; text-decoration: none;
+    box-shadow: 0 3px 10px rgba(0,0,0,.4);
+  }
+  .print-bar a { background: var(--frame); }
+  .print-bar button:hover { background: #C82828; }
+
+  @page { size: 17in 11in; margin: 0.4in; }
+
+  .qr-section {
+    display: flex; align-items: center; gap: 12px;
+    border-left: 1px dashed #8A6840; border-right: 1px dashed #8A6840;
+    padding: 0 16px;
+  }
+  .qr {
+    width: 64px; height: 64px;
+    background: var(--parch);
+    padding: 3px; border: 1.5px solid var(--frame);
+    border-radius: 4px;
+  }
+  .qr-text {
+    max-width: 180px;
+    font-family: 'Patrick Hand', cursive;
+    line-height: 1.25;
+  }
+  .qr-title {
+    font-family: 'Cabin Sketch', cursive;
+    font-weight: 700; font-size: 16px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .qr-sub { font-size: 11px; color: var(--frame); }
+
+  @media print {
+    html, body { background: #fff; padding: 0; margin: 0; }
+    .sheet {
+      box-shadow: none;
+      border-width: 4px;
+      width: 100%;
+      max-width: none;
+      page-break-inside: avoid;
+    }
+    .print-bar { display: none !important; }
+    #map { height: 600px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-bar">
+  <a href="index.html">← Gallery</a>
+  <button onclick="window.print()">🖨 Print</button>
+</div>
+
+<div class="sheet">
+
+  <header class="cartouche">
+    <div class="free-badge">
+      <div class="free">FREE</div>
+      <div class="take">TAKE ONE</div>
+    </div>
+    <span class="edition">2026 EDITION</span>
+    <h1>Downtown Rock Hill</h1>
+    <div class="sub">· DISCOVERY MAP · YORK COUNTY · SOUTH CAROLINA ·</div>
+  </header>
+
+  <div class="body">
+
+    <!-- LEFT RAIL: Coffee + Outdoor -->
+    <aside class="rail">
+      <div class="rail-head coffee">☕ Coffee &amp; Cafés</div>
+      <div class="ad" style="--cat-color:#5A2A08">
+        <span class="ad-num">1</span>
+        <h3>MudBug Coffee</h3>
+        <div class="sub">Where the map began.</div>
+        <div class="meta">134 E. Main St · Mon–Sat 6am–6pm</div>
+      </div>
+      <div class="ad" style="--cat-color:#5A2A08">
+        <span class="ad-num">11</span>
+        <h3>Catawba Grounds</h3>
+        <div class="sub">Books · Coffee · Good Vibes</div>
+        <div class="meta">River District · catawbagrounds.com</div>
+      </div>
+      <div class="ad" style="--cat-color:#5A2A08">
+        <span class="ad-num">12</span>
+        <h3>Hexagon Coffee</h3>
+        <div class="sub">Specialty roasts &amp; pastries</div>
+        <div class="meta">620 Oakland Ave · Daily 7am–5pm</div>
+      </div>
+
+      <div class="rail-head do">🥾 Get Outside!</div>
+      <div class="ad" style="--cat-color:#3A6818">
+        <span class="ad-num">17</span>
+        <h3>Catawba River Outfitters</h3>
+        <div class="sub">Kayak · SUP · Guided Floats</div>
+        <div class="meta">Riverwalk Launch · catawbaoutfitters.com</div>
+      </div>
+      <div class="ad" style="--cat-color:#3A6818">
+        <span class="ad-num">15</span>
+        <h3>Glencairn Garden</h3>
+        <div class="sub">Free admission · Festivals · Weddings</div>
+        <div class="meta">725 Crest St · Dawn–dusk</div>
+      </div>
+      <div class="ad" style="--cat-color:#3A6818">
+        <span class="ad-num">16</span>
+        <h3>Riverwalk Amphitheater</h3>
+        <div class="sub">Outdoor concerts on the Catawba</div>
+        <div class="meta">Riverwalk Rd · concerts May–Oct</div>
+      </div>
+    </aside>
+
+    <!-- CENTER: MAP -->
+    <main class="map-area">
+      <div id="map"></div>
+      <img class="compass-corner" src="assets/compass.png" alt="" onerror="this.style.display='none'">
+    </main>
+
+    <!-- RIGHT RAIL: Eat & Drink + Family + Arts -->
+    <aside class="rail">
+      <div class="rail-head eat">🍽 Eat &amp; Drink</div>
+      <div class="ad" style="--cat-color:#A02018">
+        <span class="ad-num">7</span>
+        <h3>Suntex BBQ</h3>
+        <div class="sub">Pitmaster proud since '87</div>
+        <div class="meta">Hwy 21 · Tue–Sun 11am–8pm</div>
+      </div>
+      <div class="ad" style="--cat-color:#5A3008">
+        <span class="ad-num">8</span>
+        <h3>White Street Brewing</h3>
+        <div class="sub">Craft beer · Live music!</div>
+        <div class="meta">324 W. White St · whitestreetbrewing.com</div>
+      </div>
+      <div class="ad" style="--cat-color:#A02018">
+        <span class="ad-num">3</span>
+        <h3>Vintage Vinyl &amp; Cafe</h3>
+        <div class="sub">Records · espresso · late tacos</div>
+        <div class="meta">Main St · Old Town District</div>
+      </div>
+
+      <div class="rail-head fam">⭐ Families &amp; Kids</div>
+      <div class="ad" style="--cat-color:#380A38">
+        <span class="ad-num">14</span>
+        <h3>Winthrop University</h3>
+        <div class="sub">1886 campus · Tillman Hall</div>
+        <div class="meta">701 Oakland Ave · winthrop.edu</div>
+      </div>
+      <div class="ad" style="--cat-color:#380A38">
+        <span class="ad-num">13</span>
+        <h3>York County Museum</h3>
+        <div class="sub">Dinos · Stars · Wonder!</div>
+        <div class="meta">4621 Mt. Gallant Rd · chmuseums.org</div>
+      </div>
+      <div class="ad" style="--cat-color:#0A2848">
+        <span class="ad-num">21</span>
+        <h3>Sky Zone Rock Hill</h3>
+        <div class="sub">Trampolines · dodgeball · foam pit</div>
+        <div class="meta">2461 Cherry Rd · skyzone.com</div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- BOTTOM STRIP -->
+  <div class="bottom-strip">
+    <div class="legend-row">
+      <div class="item"><span class="dot" style="background:#3A6818"></span>Outdoors</div>
+      <div class="item"><span class="dot" style="background:#A02018"></span>Eat &amp; Drink</div>
+      <div class="item"><span class="dot" style="background:#5A2A08"></span>Coffee</div>
+      <div class="item"><span class="dot" style="background:#5A3008"></span>Brewing</div>
+      <div class="item"><span class="dot" style="background:#380A38"></span>Arts &amp; Music</div>
+      <div class="item"><span class="dot" style="background:#0A2848"></span>Family Fun</div>
+    </div>
+    <div class="walk-key">
+      <span><b>↔ 5 min walk</b> ≈ 1 city block</span>
+    </div>
+    <div class="qr-section">
+      <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https%3A%2F%2Fjoshualoren.github.io%2Frock-hill-discovery-map%2Finteractive.html&color=3A2208&bgcolor=F0E2B8&qzone=1&format=svg" alt="Scan for directions">
+      <div class="qr-text">
+        <div class="qr-title">Need directions?</div>
+        <div class="qr-sub">Scan for turn-by-turn navigation in Apple Maps or Google Maps.</div>
+      </div>
+    </div>
+    <div class="credit">© Rock Hill Discovery Map · 2026 · rockHillDiscovery.com</div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const CATS = {
+  outdoor: '#3A6818', food: '#A02018', coffee: '#5A2A08',
+  beer: '#5A3008', arts: '#380A38', family: '#0A2848',
+};
+const PLACES = [
+  { lat:34.9252, lon:-81.0297, n:1,  cat:'coffee',  name:'MudBug Coffee',    img:'assets/coffee_shop.png' },
+  { lat:34.9248, lon:-81.0274, n:2,  cat:'arts',    name:'Old Brick Live' },
+  { lat:34.9248, lon:-81.0252, n:3,  cat:'food',    name:'Vintage Vinyl' },
+  { lat:34.9255, lon:-81.0228, n:4,  cat:'food',    name:'Old Town Bistro' },
+  { lat:34.9255, lon:-81.0200, n:5,  cat:'arts',    name:'York Heritage Ctr' },
+  { lat:34.9248, lon:-81.0170, n:6,  cat:'food',    name:'Improper Pig' },
+  { lat:34.9248, lon:-81.0145, n:7,  cat:'food',    name:'Suntex BBQ' },
+  { lat:34.9290, lon:-81.0240, n:8,  cat:'beer',    name:'White Street Brewing', img:'assets/brewery.png' },
+  { lat:34.9295, lon:-81.0265, n:9,  cat:'beer',    name:'Pints & Plates' },
+  { lat:34.9290, lon:-81.0210, n:10, cat:'beer',    name:'Brushcreek Distillery' },
+  { lat:34.9270, lon:-81.0120, n:11, cat:'coffee',  name:'Catawba Grounds' },
+  { lat:34.9395, lon:-81.0200, n:12, cat:'coffee',  name:'Hexagon Coffee' },
+  { lat:34.9222, lon:-81.0287, n:13, cat:'arts',    name:'York Co. Museum',  img:'assets/museum.png' },
+  { lat:34.9372, lon:-81.0335, n:14, cat:'arts',    name:'Winthrop Univ.',   img:'assets/winthrop_tower.png' },
+  { lat:34.9262, lon:-81.0183, n:15, cat:'outdoor', name:'Glencairn Garden', img:'assets/fountain.png' },
+  { lat:34.9398, lon:-81.0395, n:16, cat:'outdoor', name:'Riverwalk Amphi.', img:'assets/amphitheater.png' },
+  { lat:34.9420, lon:-81.0400, n:17, cat:'outdoor', name:'River Outfitters', img:'assets/kayak.png' },
+  { lat:34.9460, lon:-81.0130, n:18, cat:'outdoor', name:'Manchester Mdws' },
+  { lat:34.9295, lon:-81.0000, n:19, cat:'outdoor', name:'Cherry Park' },
+  { lat:34.9210, lon:-81.0185, n:20, cat:'family',  name:'Fewell Park' },
+  { lat:34.9245, lon:-81.0050, n:21, cat:'family',  name:'Sky Zone' },
+];
+
+/* LOCKED-DOWN MAP — no interaction, fixed view */
+const map = L.map('map', {
+  zoomControl: false, dragging: false, touchZoom: false,
+  doubleClickZoom: false, scrollWheelZoom: false,
+  boxZoom: false, keyboard: false, tap: false,
+  zoomSnap: 0,
+}).setView([34.9325, -81.0220], 15);
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap',
+}).addTo(map);
+
+PLACES.forEach(pl => {
+  const col = CATS[pl.cat];
+  const html = pl.img
+    ? `<div class="biz-marker" style="--cat-color:${col};border-color:${col}"><img src="${pl.img}" alt=""></div>`
+    : `<div class="biz-marker" style="--cat-color:${col};border-color:${col}"><div class="num" style="--cat-color:${col}">${pl.n}</div></div>`;
+  const icon = L.divIcon({ html, className: '', iconSize: [32, 32], iconAnchor: [16, 16] });
+  L.marker([pl.lat, pl.lon], { icon })
+    .addTo(map)
+    .bindTooltip(`${pl.n}. ${pl.name}`, {
+      permanent: true, direction: 'right', offset: [18, 0],
+      className: 'biz-tip',
+    });
+});
+</script>
+</body>
+</html>

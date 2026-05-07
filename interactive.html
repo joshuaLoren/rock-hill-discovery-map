@@ -232,6 +232,30 @@
     border-top: 1px dashed #8A6840;
     padding-top: 6px;
   }
+  .popup .dirs {
+    margin-top: 10px; padding-top: 8px;
+    border-top: 1px dashed #8A6840;
+    display: flex; gap: 6px;
+  }
+  .popup .dirs a {
+    flex: 1;
+    display: inline-block;
+    background: var(--cat-color, #5A3818);
+    color: #F0E2B8;
+    font-family: 'Cabin Sketch', cursive;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-align: center;
+    text-decoration: none;
+    padding: 6px 4px;
+    border-radius: 3px;
+    border: 1.5px solid #5A3818;
+    transition: filter 0.15s;
+  }
+  .popup .dirs a:hover { filter: brightness(1.15); }
+  .popup .dirs a.apple { background: #2A2A2A; }
+  .popup .dirs a.google { background: #4285F4; color: #fff; }
 
   /* Compass rose corner */
   .compass-corner {
@@ -370,6 +394,8 @@ PLACES.forEach(pl => {
     html, className: '', iconSize: [38, 38], iconAnchor: [19, 19],
   });
 
+  const appleUrl = `https://maps.apple.com/?daddr=${pl.lat},${pl.lon}&dirflg=w&q=${encodeURIComponent(pl.name)}`;
+  const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${pl.lat},${pl.lon}&travelmode=walking`;
   const popupHtml = `
     <div class="popup" style="--cat-color:${col}">
       ${pl.img ? `<img src="${pl.img}" alt="${pl.name}">` : ''}
@@ -377,6 +403,10 @@ PLACES.forEach(pl => {
       <h3>${pl.name}</h3>
       <div class="desc">${pl.desc}</div>
       <div class="meta">${pl.meta}</div>
+      <div class="dirs">
+        <a class="apple"  href="${appleUrl}"  target="_blank" rel="noopener">🍎 Apple Maps</a>
+        <a class="google" href="${googleUrl}" target="_blank" rel="noopener">🗺 Google Maps</a>
+      </div>
     </div>`;
 
   L.marker([pl.lat, pl.lon], { icon })
