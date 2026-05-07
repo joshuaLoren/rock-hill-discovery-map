@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Downtown Rock Hill — Discovery Map</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Cabin+Sketch:wght@400;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Patrick Hand', cursive;
+    background: #2A1810
+      repeating-linear-gradient(45deg, transparent 0 8px, rgba(255,255,255,0.02) 8px 9px);
+    color: #3A2208;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .sheet {
+    max-width: 1500px;
+    margin: 0 auto;
+    background: #F0E2B8;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(120,80,40,0.10), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(120,80,40,0.10), transparent 60%);
+    border: 6px solid #5A3818;
+    box-shadow:
+      inset 0 0 0 8px #F0E2B8,
+      inset 0 0 0 11px #C8A878,
+      inset 0 0 0 13px #5A3818,
+      0 24px 80px rgba(0,0,0,.6);
+    padding: 18px;
+    position: relative;
+  }
+
+  /* Cartouche header */
+  .cartouche {
+    text-align: center;
+    padding: 18px 0 14px;
+    border-bottom: 1.5px solid #8A6840;
+    margin-bottom: 14px;
+    position: relative;
+    background:
+      radial-gradient(ellipse at center, rgba(200,168,120,0.25), transparent 70%);
+  }
+  .cartouche::before, .cartouche::after {
+    content: '✦';
+    color: #A02018;
+    font-size: 22px;
+    margin: 0 18px;
+    vertical-align: middle;
+  }
+  .cartouche h1 {
+    display: inline-block;
+    font-family: 'Cabin Sketch', cursive;
+    font-weight: 700;
+    font-size: 48px;
+    color: #3A2208;
+    letter-spacing: 4px;
+    line-height: 1;
+    vertical-align: middle;
+  }
+  .cartouche .sub {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 14px;
+    color: #5A3818;
+    letter-spacing: 6px;
+    margin-top: 8px;
+  }
+  .cartouche .free-badge {
+    position: absolute; top: 18px; left: 18px;
+    background: #A02018; color: #F0E2B8;
+    border: 2px solid #F0E2B8; border-radius: 50%;
+    width: 64px; height: 64px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Cabin Sketch', cursive; font-weight: 700;
+    box-shadow: 0 3px 10px rgba(0,0,0,.4);
+    transform: rotate(-8deg);
+  }
+  .cartouche .free-badge .free { font-size: 18px; line-height: 1; }
+  .cartouche .free-badge .take { font-size: 8px; letter-spacing: 1px; margin-top: 3px; opacity: 0.85; }
+
+  /* Map container */
+  .map-frame {
+    border: 3px solid #5A3818;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    background: #DDC890;
+    box-shadow: inset 0 0 30px rgba(60,30,8,0.2);
+  }
+  #map {
+    height: 720px;
+    width: 100%;
+    background: #DDC890;
+  }
+
+  /* WATERCOLOR FILTER on the map tiles — fakes the Stamen Watercolor look using OSM */
+  .leaflet-tile-pane {
+    filter: sepia(0.35) saturate(1.4) hue-rotate(-12deg) contrast(0.92) brightness(1.1);
+    mix-blend-mode: multiply;
+    opacity: 0.85;
+  }
+  /* Paper-grain overlay across the whole map */
+  .map-frame::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 50%, rgba(90,56,24,0.15) 100%),
+      repeating-radial-gradient(circle at 25% 30%, rgba(120,80,40,0.04) 0, rgba(120,80,40,0.04) 1px, transparent 2px, transparent 5px);
+    pointer-events: none;
+    z-index: 401;
+  }
+
+  /* Bottom legend */
+  .bottom-bar {
+    margin-top: 14px;
+    background: linear-gradient(to bottom, #F0E2B8, #D6BD8A);
+    border: 2px solid #5A3818;
+    border-radius: 5px;
+    padding: 14px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .legend {
+    display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+    font-weight: 700;
+    color: #3A2208;
+  }
+  .legend-dot {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid #3A2208;
+  }
+  .credit {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 12px;
+    color: #5A3818;
+    letter-spacing: 1px;
+  }
+
+  /* Custom marker styles */
+  .biz-marker {
+    background: #F0E2B8;
+    border: 2px solid #5A3818;
+    border-radius: 50%;
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .biz-marker:hover { transform: scale(1.18); z-index: 1000; }
+  .biz-marker img {
+    width: 30px; height: 30px;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .biz-marker .num {
+    font-family: 'Cabin Sketch', cursive;
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+    background: var(--cat-color, #5A3818);
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Popup styling */
+  .leaflet-popup-content-wrapper {
+    background: linear-gradient(to bottom, #F0E2B8, #D6BD8A);
+    border: 2px solid #5A3818;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.4);
+    padding: 0;
+  }
+  .leaflet-popup-tip {
+    background: #D6BD8A;
+    border: 2px solid #5A3818;
+  }
+  .popup {
+    padding: 12px 14px;
+    min-width: 220px;
+    font-family: 'Patrick Hand', cursive;
+    color: #3A2208;
+  }
+  .popup img {
+    width: 100%;
+    border-radius: 4px;
+    border: 1.5px solid #5A3818;
+    margin-bottom: 8px;
+  }
+  .popup h3 {
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    margin-bottom: 4px;
+    color: var(--cat-color, #3A2208);
+  }
+  .popup .cat {
+    display: inline-block;
+    background: var(--cat-color, #5A3818);
+    color: #F0E2B8;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    font-family: 'Patrick Hand', cursive;
+  }
+  .popup .desc {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .popup .meta {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #5A3818;
+    border-top: 1px dashed #8A6840;
+    padding-top: 6px;
+  }
+
+  /* Compass rose corner */
+  .compass-corner {
+    position: absolute;
+    bottom: 20px;
+    right: 24px;
+    z-index: 500;
+    width: 90px;
+    height: 90px;
+    pointer-events: none;
+    opacity: 0.92;
+  }
+
+  /* Hide leaflet attribution */
+  .leaflet-control-attribution { font-size: 10px; opacity: 0.6; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="cartouche">
+    <div class="free-badge">
+      <div class="free">FREE</div>
+      <div class="take">TAKE ONE</div>
+    </div>
+    <h1>Downtown Rock Hill</h1>
+    <div class="sub">· DISCOVERY MAP · YORK COUNTY · SOUTH CAROLINA · 2026 EDITION ·</div>
+  </header>
+
+  <div class="map-frame">
+    <div id="map"></div>
+    <img class="compass-corner" src="assets/compass.png" alt="compass" onerror="this.style.display='none'">
+  </div>
+
+  <div class="bottom-bar">
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#3A6818"></span>Outdoors</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#A02018"></span>Eat &amp; Drink</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#5A2A08"></span>Coffee</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#5A3008"></span>Brewing</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#380A38"></span>Arts &amp; Music</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#0A2848"></span>Family Fun</div>
+    </div>
+    <div class="credit">Click any marker · Pan &amp; zoom to explore · rockHillDiscovery.com</div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const CATS = {
+  outdoor: '#3A6818',
+  food:    '#A02018',
+  coffee:  '#5A2A08',
+  beer:    '#5A3008',
+  arts:    '#380A38',
+  family:  '#0A2848',
+};
+
+const PLACES = [
+  /* downtown core */
+  { lat:34.9252, lon:-81.0297, n:1, cat:'coffee',  name:'MudBug Coffee',
+    img:'assets/coffee_shop.png', desc:'Where the map began. Locally roasted, great pastries.', meta:'134 E. Main St · Mon–Sat 6–6' },
+  { lat:34.9248, lon:-81.0274, n:2, cat:'arts',    name:'Old Brick Live',
+    img:null, desc:'Historic music venue. Acoustic & local acts Thu–Sat.', meta:'212 E. Main St · oldbricklive.com' },
+  { lat:34.9248, lon:-81.0252, n:3, cat:'food',    name:'Vintage Vinyl & Cafe',
+    img:null, desc:'Records, espresso, late-night tacos.', meta:'· Main St' },
+  { lat:34.9255, lon:-81.0228, n:4, cat:'food',    name:'Old Town Bistro',
+    img:null, desc:'Farm-to-table Southern with patio.', meta:'· Main & Trade' },
+  { lat:34.9255, lon:-81.0200, n:5, cat:'arts',    name:'York Heritage Center',
+    img:null, desc:'Local history exhibits, free admission.', meta:'· Main St · 10–5 daily' },
+  { lat:34.9248, lon:-81.0170, n:6, cat:'food',    name:'Improper Pig',
+    img:null, desc:'BBQ joint with bourbon list.', meta:'· Main St' },
+  { lat:34.9248, lon:-81.0145, n:7, cat:'food',    name:'Suntex BBQ',
+    img:null, desc:'Pitmaster proud since \'87.', meta:'Hwy 21 · Tue–Sun 11–8' },
+
+  /* brewing district */
+  { lat:34.9290, lon:-81.0240, n:8, cat:'beer',    name:'White Street Brewing Co.',
+    img:'assets/brewery.png', desc:'Craft beer, live music, Sunday brunch.', meta:'324 W. White St · whitestreetbrewing.com' },
+  { lat:34.9295, lon:-81.0265, n:9, cat:'beer',    name:'Pints & Plates',
+    img:null, desc:'Craft beer with elevated pub fare.', meta:'· White St' },
+  { lat:34.9290, lon:-81.0210, n:10, cat:'beer',   name:'Brushcreek Distillery',
+    img:null, desc:'Small-batch bourbon, tours by appointment.', meta:'· White St' },
+
+  /* coffee + cafés around */
+  { lat:34.9270, lon:-81.0120, n:11, cat:'coffee', name:'Catawba Grounds',
+    img:null, desc:'Books, coffee, good vibes.', meta:'River District · catawbagrounds.com' },
+  { lat:34.9395, lon:-81.0200, n:12, cat:'coffee', name:'Hexagon Coffee',
+    img:null, desc:'Specialty roasts & pastries.', meta:'620 Oakland Ave · Daily 7–5' },
+
+  /* civic + cultural */
+  { lat:34.9222, lon:-81.0287, n:13, cat:'arts',   name:'York County Museum',
+    img:'assets/museum.png', desc:'Dinosaurs, stars, local heritage.', meta:'4621 Mt. Gallant Rd · chmuseums.org' },
+  { lat:34.9372, lon:-81.0335, n:14, cat:'arts',   name:'Winthrop University',
+    img:'assets/winthrop_tower.png', desc:'1886 campus, Tillman Hall, Conservatory.', meta:'701 Oakland Ave · winthrop.edu' },
+
+  /* outdoors + family */
+  { lat:34.9262, lon:-81.0183, n:15, cat:'outdoor',name:'Glencairn Garden',
+    img:'assets/fountain.png', desc:'Free admission. Festivals & weddings.', meta:'725 Crest St · Dawn–dusk' },
+  { lat:34.9398, lon:-81.0395, n:16, cat:'outdoor',name:'Riverwalk Amphitheater',
+    img:'assets/amphitheater.png', desc:'Outdoor concerts on the Catawba.', meta:'· Riverwalk Rd' },
+  { lat:34.9420, lon:-81.0400, n:17, cat:'outdoor',name:'Catawba River Outfitters',
+    img:'assets/kayak.png', desc:'Kayak, SUP, guided floats.', meta:'Riverwalk Launch · catawbaoutfitters.com' },
+  { lat:34.9460, lon:-81.0130, n:18, cat:'outdoor',name:'Manchester Meadows',
+    img:null, desc:'Soccer, baseball, miles of trail.', meta:'· North side of town' },
+  { lat:34.9295, lon:-81.0000, n:19, cat:'outdoor',name:'Cherry Park',
+    img:null, desc:'Premier baseball complex. Tournaments year-round.', meta:'2461 Cherry Rd · skyzone.com' },
+  { lat:34.9210, lon:-81.0185, n:20, cat:'family', name:'Fewell Park',
+    img:null, desc:'Playground, picnic shelter, splash pad.', meta:'· South of Old Town' },
+  { lat:34.9245, lon:-81.0050, n:21, cat:'family', name:'Sky Zone Rock Hill',
+    img:null, desc:'Trampolines, dodgeball, foam pit.', meta:'· Cherry Rd' },
+];
+
+const map = L.map('map', {
+  zoomControl: true,
+  attributionControl: true,
+  minZoom: 13,
+  maxZoom: 18,
+}).setView([34.9325, -81.0220], 15);
+
+/* OpenStreetMap tiles — base. CSS filter above gives them the watercolor wash. */
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap contributors · Discovery Map style ✦ rockHillDiscovery.com',
+}).addTo(map);
+
+/* Place all markers */
+PLACES.forEach(pl => {
+  const col = CATS[pl.cat];
+  const html = pl.img
+    ? `<div class="biz-marker" style="--cat-color:${col};border-color:${col}"><img src="${pl.img}" alt=""></div>`
+    : `<div class="biz-marker" style="--cat-color:${col};border-color:${col}"><div class="num" style="--cat-color:${col}">${pl.n}</div></div>`;
+
+  const icon = L.divIcon({
+    html, className: '', iconSize: [38, 38], iconAnchor: [19, 19],
+  });
+
+  const popupHtml = `
+    <div class="popup" style="--cat-color:${col}">
+      ${pl.img ? `<img src="${pl.img}" alt="${pl.name}">` : ''}
+      <div class="cat" style="background:${col}">${pl.cat}</div>
+      <h3>${pl.name}</h3>
+      <div class="desc">${pl.desc}</div>
+      <div class="meta">${pl.meta}</div>
+    </div>`;
+
+  L.marker([pl.lat, pl.lon], { icon })
+    .addTo(map)
+    .bindPopup(popupHtml, { maxWidth: 280, closeButton: true });
+});
+</script>
+</body>
+</html>
