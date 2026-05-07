@@ -339,7 +339,13 @@ body {
 
   <!-- MAP — legend is drawn inside the SVG by the render script -->
   <main class="map-area">
-    <svg id="rh-map" viewBox="0 0 1100 900" style="display:block;width:100%;height:auto;"></svg>
+    <div class="map-wrap" style="position:relative;display:block;">
+      <img id="rh-map-img" src="map-art.jpg" alt="Downtown Rock Hill Discovery Map" style="display:block;width:100%;height:auto;">
+      <div class="map-title-overlay" style="position:absolute;top:2%;left:50%;transform:translateX(-50%);background:linear-gradient(to bottom,#F0E2B8,#D6BD8A);border:2px solid #5A3818;border-radius:6px;padding:8px 32px;box-shadow:0 4px 12px rgba(60,40,10,0.4);text-align:center;min-width:380px;">
+        <div style="font-family:'Cabin Sketch',cursive;font-weight:700;font-size:28px;color:#3A2208;letter-spacing:3px;line-height:1;">Downtown Rock Hill</div>
+        <div style="font-family:'Patrick Hand',cursive;font-size:10px;color:#5A3818;letter-spacing:5px;margin-top:4px;">· DISCOVERY MAP · YORK COUNTY · SC ·</div>
+      </div>
+    </div>
   </main>
 
   <!-- RIGHT RAIL -->
